@@ -19,11 +19,11 @@ export const techSlug = {React:'react',Java:'openjdk',Python:'python',JavaScript
 // Add a project by adding one object here; its page and card are generated automatically.
 export const disciplines = [['Code2','Engineering','Web, mobile and backend development.'],['PenTool','Design','Interface and experience design.'],['Cloud','Cloud and infrastructure','Deployment, hosting and reliability.'],['LifeBuoy','Support','Maintenance and ongoing improvements.']]
 export const team = [] // add { name, role, bio, photo:'/team/name.jpg', leader:true } objects to show profiles on the Team page
-const shots=(k,n)=>[{src:`/projects/${k}.jpg`,label:`${n} showcase`},{src:`/projects/${k}-desktop.jpg`,label:`${n} desktop view`},{src:`/projects/${k}-mobile.jpg`,label:`${n} mobile view`}]
+const shots=(k,n)=>[{src:`/projects/${k}-desktop.png`,label:`${n} showcase`},{src:`/projects/${k}-mobile.png`,label:`${n} desktop view`},{src:`/projects/${k}-project.png`,label:`${n} mobile view`}]
 const status='Completed sample / Live demo'
 // Add a project by adding one object here; its card and detail page are generated automatically.
 export const projects = [
- { slug:'building-enterprise-website', name:'Building Enterprise Website', category:'Construction and Interior Design Website', status, image:'/projects/buildcraft.jpg', live:'https://building-web-zeta.vercel.app/', shots:shots('buildcraft','Building Enterprise Website'),
+ { slug:'building-enterprise-website', name:'Building Enterprise Website', category:'Construction and Interior Design Website', status, image:'/projects/buildcraft.png', live:'https://building-web-zeta.vercel.app/', shots:shots('buildcraft','Building Enterprise Website'),
    description:'A business website for construction and interior design services, with packages, a project gallery and consultation booking.',
    tech:['Deployed on Vercel'],
    overview:'A modern construction and interior design business website designed to showcase residential construction, villa projects, modular kitchens, office interiors, and architectural services. It provides visitors with information about services, pricing packages, project galleries, and consultation booking.',
