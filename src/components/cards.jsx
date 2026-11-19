@@ -6,7 +6,7 @@ import { projects } from '../data/content'
 export function ProjectCard({p,dark}){
   return <Link to={`/projects/${p.slug}`} className={`group block border transition duration-300 hover:border-teal ${dark?'hair-d':'hair-l'}`}>
     <div className="relative flex aspect-[16/10] items-center justify-center overflow-hidden bg-ink">
-      <img src={p.image} alt={`${p.name} project illustration`} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105"/>
+      <img src={p.image} alt={`${p.name} project illustration`} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" style={p.imgPos?{objectPosition:p.imgPos}:undefined}/>
     </div>
     <div className="p-6">
       <div className="flex items-center justify-between text-xs"><span className="text-teal-light">{p.category}</span><span className={dark?'text-mist/60':'text-muted'}>{p.status}</span></div>

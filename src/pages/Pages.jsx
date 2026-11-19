@@ -77,13 +77,17 @@ export function Expertise(){
       <Link to="/contact" className="btn btn-solid mt-8">Start a Project</Link></div></Section></>
 }
 
-// Set VITE_FORM_ENDPOINT (e.g. Formspree/your API URL) in Vercel env vars to enable sending.
-const ENDPOINT = import.meta.env.VITE_FORM_ENDPOINT
+// Contact form endpoint – Vercel serverless function at /api/contact
+const ENDPOINT = '/api/contact'
 const empty={name:'',email:'',phone:'',company:'',service:'',budget:'',message:''}
+// Field wrapper defined outside Contact to keep a stable component identity across re-renders (prevents input focus loss).
+function L({k,label,req,errors,children}){
+  return <div><label htmlFor={k} className="text-sm font-medium">{label}{req?' *':' (optional)'}</label>{children}{errors[k]&&<p id={k+'-e'} role="alert" className="mt-1 text-xs text-red-700">{errors[k]}</p>}</div>
+}
 export function Contact(){
   usePageTitle('Contact Us')
-  const [f,setF]=useState(empty); const [err,setErr]=useState({}); const [state,setState]=useState('idle')
-  const set=k=>e=>setF({...f,[k]:e.target.value})
+  const [f,setF]=useState(empty); const [err,setErr]=useState({}); const [state,setState]=useState('idle'); const [errMsg,setErrMsg]=useState(''); const [waUrls,setWaUrls]=useState([])
+  const set=k=>e=>{const v=e.target.value; setF(prev=>({...prev,[k]:v}))}
   const validate=()=>{ const e={}
     if(f.name.trim().length<2) e.name='Enter your full name.'
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email)) e.email='Enter a valid email address.'
@@ -92,27 +96,34 @@ export function Contact(){
     if(f.message.trim().length<20) e.message='Describe your project in at least 20 characters.'
     return e }
   const submit=async ev=>{ ev.preventDefault(); const e=validate(); setErr(e); if(Object.keys(e).length) return
-    if(!ENDPOINT){ const body=`Name: ${f.name}\nEmail: ${f.email}\nPhone: ${f.phone||'-'}\nCompany: ${f.company||'-'}\nService: ${f.service}\nBudget: ${f.budget||'-'}\n\n${f.message}`; window.location.href=`mailto:${contact.email}?subject=${encodeURIComponent('Project enquiry: '+f.service)}&body=${encodeURIComponent(body)}`; setState('mailto'); return }
-    setState('sending')
-    try{ const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(f)}); if(!r.ok) throw 0; setState('success'); setF(empty) }catch{ setState('error') } }
+    setState('sending'); setErrMsg(''); setWaUrls([])
+    try{
+      const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(f)})
+      const data=await r.json().catch(()=>({}))
+      if(!data.emailSent) throw new Error(data.emailError||data.error||'The enquiry could not be sent.')
+      setState('success'); setF(empty)
+      const urls=data.whatsappUrls||[]
+      setWaUrls(urls)
+      if(urls.length===1) window.open(urls[0],'_blank','noopener')
+    }catch(e){ setState('error'); setErrMsg(e.message||'The enquiry could not be sent. Please try again or email us directly.') } }
   const inp=k=>`mt-1 w-full border bg-white px-4 py-3 text-sm outline-none transition focus:border-teal ${err[k]?'border-red-600':'hair-l'}`
-  const L=({k,label,req,children})=><div><label htmlFor={k} className="text-sm font-medium">{label}{req?' *':' (optional)'}</label>{children}{err[k]&&<p id={k+'-e'} role="alert" className="mt-1 text-xs text-red-700">{err[k]}</p>}</div>
   const P=k=>({id:k,value:f[k],onChange:set(k),className:inp(k),'aria-invalid':!!err[k],'aria-describedby':err[k]?k+'-e':undefined})
   return <><PageHero title="Contact Us" intro="Tell us about your project and we will get back to you."/>
     <Section><div className="grid gap-16 lg:grid-cols-3">
       <form onSubmit={submit} noValidate className="grid gap-5 sm:grid-cols-2 lg:col-span-2">
-        <L k="name" label="Full Name" req><input {...P('name')} autoComplete="name"/></L>
-        <L k="email" label="Email Address" req><input {...P('email')} type="email" autoComplete="email"/></L>
-        <L k="phone" label="Phone Number"><input {...P('phone')} type="tel" autoComplete="tel"/></L>
-        <L k="company" label="Company Name"><input {...P('company')} autoComplete="organization"/></L>
-        <L k="service" label="Service Required" req><select {...P('service')}><option value="">Select a service</option>{services.map(s=><option key={s[1]}>{s[1]}</option>)}</select></L>
-        <L k="budget" label="Project Budget"><select {...P('budget')}><option value="">Prefer not to say</option><option>Under ₹50,000</option><option>₹50,000 - ₹2,00,000</option><option>₹2,00,000 - ₹10,00,000</option><option>Above ₹10,00,000</option></select></L>
-        <div className="sm:col-span-2"><L k="message" label="Project Description" req><textarea {...P('message')} rows={6}/></L></div>
+        <L k="name" label="Full Name" req errors={err}><input {...P('name')} autoComplete="name"/></L>
+        <L k="email" label="Email Address" req errors={err}><input {...P('email')} type="email" autoComplete="email"/></L>
+        <L k="phone" label="Phone Number" errors={err}><input {...P('phone')} type="tel" autoComplete="tel"/></L>
+        <L k="company" label="Company Name" errors={err}><input {...P('company')} autoComplete="organization"/></L>
+        <L k="service" label="Service Required" req errors={err}><select {...P('service')}><option value="">Select a service</option>{services.map(s=><option key={s[1]}>{s[1]}</option>)}</select></L>
+        <L k="budget" label="Project Budget" errors={err}><select {...P('budget')}><option value="">Prefer not to say</option><option>Under ₹50,000</option><option>₹50,000 - ₹2,00,000</option><option>₹2,00,000 - ₹10,00,000</option><option>Above ₹10,00,000</option></select></L>
+        <div className="sm:col-span-2"><L k="message" label="Project Description" req errors={err}><textarea {...P('message')} rows={6}/></L></div>
         <div className="sm:col-span-2"><button className="btn btn-solid" disabled={state==='sending'}>{state==='sending'?'Sending...':'Submit Enquiry'}</button>
           <div aria-live="polite" className="mt-5">
-            {state==='success'&&<p className="flex items-center gap-2 text-teal"><CheckCircle2 size={18}/>Enquiry sent. We will be in touch.</p>}
-            {state==='error'&&<p className="flex items-center gap-2 text-red-700"><AlertTriangle size={18}/>The enquiry could not be sent. Please try again or email us directly.</p>}
-            {state==='mailto'&&<p className="flex items-start gap-2 text-sm text-muted"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-teal"/>Your email app should now open with the enquiry ready to send to {contact.email}. The enquiry is sent only when you send that email.</p>}
+            {state==='success'&&<><p className="flex items-center gap-2 text-teal"><CheckCircle2 size={18}/>Enquiry sent via email. We will be in touch.</p>
+              {waUrls.length>1&&<div className="mt-3 flex flex-wrap gap-2">{waUrls.map((u,i)=><a key={i} href={u} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-teal/40 bg-teal/5 px-4 py-2 text-sm font-semibold text-teal transition hover:bg-teal/10">Open WhatsApp {i+1}</a>)}</div>}
+              {waUrls.length===1&&<p className="mt-1 text-xs text-muted">WhatsApp has been opened with your enquiry. Press Send inside WhatsApp to deliver it.</p>}</>}
+            {state==='error'&&<p className="flex items-center gap-2 text-red-700"><AlertTriangle size={18}/>{errMsg}</p>}
           </div></div>
       </form>
       <aside className="space-y-6"><h2 className="text-2xl font-semibold">Contact details</h2>
